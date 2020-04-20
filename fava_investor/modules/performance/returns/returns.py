@@ -271,6 +271,12 @@ def sum_balances_for_accounts(balance, entry, accounts):
     return balance
 
 
+def is_internal_flow_entry(entry, accounts_internal):
+    return isinstance(entry, data.Transaction) and any(
+        posting.account in accounts_internal for posting in entry.postings
+    )
+
+
 def is_external_flow_entry(entry, accounts_related):
     return isinstance(entry, data.Transaction) and any(
         posting.account not in accounts_related for posting in entry.postings

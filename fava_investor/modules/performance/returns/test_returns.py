@@ -2,7 +2,6 @@ __copyright__ = "Copyright (C) 2014-2017  Martin Blais"
 __license__ = "GNU GPLv2"
 
 import datetime
-import logging
 import textwrap
 import sys
 import subprocess
@@ -18,10 +17,6 @@ from beancount.core import inventory
 from beancount.parser import cmptest
 from beancount.parser import options
 from beancount.utils import test_utils
-
-
-def setUp(self):
-    logging.basicConfig(level=logging.DEBUG, format="%(levelname)-8s: %(message)s")
 
 
 def dates_from_timeline(timeline):

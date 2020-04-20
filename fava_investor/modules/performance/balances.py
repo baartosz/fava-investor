@@ -11,7 +11,7 @@ def get_closed_tree_with_value_accounts_only(accapi, config) -> Tree:
     accounts_to_keep = _get_value_accounts_and_parents(
         accapi.ledger.accounts, config.get("accounts_patterns", [".*"])
     )
-    _filter_tree(tree, accounts_to_keep)
+    filter_tree(tree, accounts_to_keep)
     return tree
 
 
@@ -45,7 +45,7 @@ def _get_value_accounts_and_parents(accounts: dict, patterns):
     return result
 
 
-def _filter_tree(tree, accounts_to_keep):
+def filter_tree(tree, accounts_to_keep):
     for account in list(tree.keys()):
         if account not in accounts_to_keep:
             _remove_account_from_tree(tree, account)

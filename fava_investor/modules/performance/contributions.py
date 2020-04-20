@@ -78,11 +78,12 @@ class ContributionsCalculator:
 
 
 def get_accounts_from_config(accapi, config) -> Accounts:
+    accounts = accapi.accounts
     value = filter_matching(
-        accapi.ledger.accounts, config.get("accounts_patterns", [".*"])
+        accounts, config.get("accounts_patterns", [".*"])
     )
     internal = filter_matching(
-        accapi.ledger.accounts, config.get("accounts_internal_patterns", [".*"])
+        accounts, config.get("accounts_internal_patterns", [".*"])
     )
-    external = set(accapi.ledger.accounts).difference(value | internal)
+    external = set(accounts).difference(value | internal)
     return Accounts(value, internal, external)
