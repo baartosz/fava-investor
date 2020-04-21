@@ -2,7 +2,8 @@
 
 from fava.ext import FavaExtensionBase
 
-from .modules.performance import balances, contributions
+import fava_investor.modules.performance.common
+import fava_investor.modules.performance.performance
 from .modules.tlh import libtlh
 from .modules.assetalloc_class import libassetalloc
 from .modules.assetalloc_account import libaaacc
@@ -50,19 +51,19 @@ class Investor(FavaExtensionBase):  # pragma: no cover
     # -----------------------------------------------------------------------------------------------------------
     def build_balances_tree(self):
         accapi = FavaInvestorAPI(self.ledger)
-        return balances.get_closed_tree_with_value_accounts_only(accapi, self.config.get('performance', {}))
+        return fava_investor.modules.performance.performance.get_balances_tree(accapi, self.config.get('performance', {}))
 
     def build_contributions_journal(self):
         accapi = FavaInvestorAPI(self.ledger)
-        accounts = contributions.get_accounts_from_config(accapi, self.config.get('performance', {}))
-        contr = contributions.ContributionsCalculator(accapi, accounts)
+        accounts = fava_investor.modules.performance.common.get_accounts_from_config(accapi, self.config.get('performance', {}))
+        contr = fava_investor.modules.performance.performance.ContributionsCalculator(accapi, accounts)
         entries = contr.get_contributions_entries()
         return map(lambda entry: (entry.transaction, None, entry.change, entry.balance), entries)
 
     def build_withdrawals_journal(self):
         accapi = FavaInvestorAPI(self.ledger)
-        accounts = contributions.get_accounts_from_config(accapi, self.config.get('performance', {}))
-        contr = contributions.ContributionsCalculator(accapi, accounts)
+        accounts = fava_investor.modules.performance.common.get_accounts_from_config(accapi, self.config.get('performance', {}))
+        contr = fava_investor.modules.performance.performance.ContributionsCalculator(accapi, accounts)
         entries = contr.get_withdrawals_entries()
         return map(lambda entry: (entry.transaction, None, entry.change, entry.balance), entries)
 

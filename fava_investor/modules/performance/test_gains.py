@@ -4,11 +4,10 @@ from beancount import loader
 from beancount.core.inventory import Inventory
 from beancount.ops import validation
 from beancount.utils import test_utils
-from fava.core.inventory import CounterInventory
 
 from beancountinvestorapi import AccAPI
-from .contributions import get_accounts_from_config
-from .gains import GainsCalculator
+from .common import get_accounts_from_config
+from .performance import GainsCalculator
 
 CONFIG = {"accounts_patterns": ["^Assets:Account"], "accounts_internal_patterns": ["^Income:Gains$"]}
 
@@ -42,9 +41,35 @@ class TestGains(test_utils.TestCase):
         2020-02-22 price AA  2 USD
         """
         sut = get_sut(filename, CONFIG)
-        result = sut.get_unrealized_gains()
+        result = sut.get_unrealized_gains_total()
 
-        self.assertEquals(Inventory.from_string("1 USD"), result)
+        self.assertEquals({"USD": 1}, result)
+
+    @test_utils.docfile
+    def test_get_unrealized_gains_entries(self, filename: str):
+        """
+        2020-01-01 open Assets:Bank
+        2020-01-01 open Assets:Account:A
+        2020-01-01 open Assets:Account:B
+
+        2020-02-22 * "Buy stock"
+          Assets:Account:A  1 AA {1 USD}
+          Assets:Bank
+
+        2020-02-23 * "Buy stock"
+          Assets:Account:B  2 AA {1 USD}
+          Assets:Bank
+
+        2020-02-22 price AA  2 USD
+        """
+        sut = get_sut(filename, CONFIG)
+        result = sut.get_unrealized_gains_per_account()
+
+        expected = {
+            "Assets:Account:A": {"USD": 1},
+            "Assets:Account:B": {"USD": 2},
+        }
+        self.assertEqual(expected, result)
 
     @test_utils.docfile
     def test_unrealized_ignoreNonValueAccounts(self, filename: str):
@@ -59,7 +84,7 @@ class TestGains(test_utils.TestCase):
         2020-02-22 price AA  2 USD
         """
         sut = get_sut(filename, CONFIG)
-        result = sut.get_unrealized_gains()
+        result = sut.get_unrealized_gains_total()
 
         self.assertEquals(Inventory(), result)
 
@@ -86,7 +111,7 @@ class TestGains(test_utils.TestCase):
         2020-02-24 price AA  4 USD
         """
         sut = get_sut(filename, CONFIG)
-        result = sut.get_unrealized_gains()
+        result = sut.get_unrealized_gains_total()
 
         self.assertEquals({"USD": 2}, result)
 
@@ -103,7 +128,7 @@ class TestGains(test_utils.TestCase):
         2020-02-22 price AA  2 USD
         """
         sut = get_sut(filename, CONFIG)
-        result = sut.get_unrealized_gains()
+        result = sut.get_unrealized_gains_total()
 
         self.assertEquals({"USD": 1}, result)
 

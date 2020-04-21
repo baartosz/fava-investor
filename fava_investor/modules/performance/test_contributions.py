@@ -2,7 +2,8 @@ from beancount.core.data import Transaction
 from beancount.core.inventory import Inventory
 from beancount.utils import test_utils
 
-from .contributions import ContributionsCalculator, get_accounts_from_config
+from .performance import ContributionsCalculator
+from .common import get_accounts_from_config
 from .test_balances import get_ledger
 
 CONFIG = {"accounts_patterns": ["^Assets:Account"], "accounts_internal_patterns": []}

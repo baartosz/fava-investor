@@ -1,19 +1,16 @@
 import re
+from collections import namedtuple
 
-from beancount.core.account import parent, parents
-from fava.core import FavaLedger, Tree
-from fava.core.tree import TreeNode
+from beancount.core.account import parents, parent
+from fava.core.tree import TreeNode, Tree
+
+Accounts = namedtuple("Accounts", "value internal external")
 
 
-def get_closed_tree_with_value_accounts_only(accapi, config) -> Tree:
-    ledger: FavaLedger = accapi.ledger
-    tree = ledger.root_tree_closed
-
-    accounts_to_keep = get_accounts_with_parents(filter_matching(
-        accapi.ledger.accounts, config.get("accounts_patterns", [".*"])
-    ))
-    filter_tree(tree, accounts_to_keep)
-    return tree
+def filter_tree(tree, accounts_to_keep):
+    for account in list(tree.keys()):
+        if account not in accounts_to_keep:
+            _remove_account_from_tree(tree, account)
 
 
 def filter_matching(accounts, patterns):
@@ -22,6 +19,18 @@ def filter_matching(accounts, patterns):
         if _is_value_account(account, patterns):
             result.add(account)
     return result
+
+
+def get_accounts_from_config(accapi, config) -> Accounts:
+    accounts = accapi.accounts
+    value = filter_matching(
+        accounts, config.get("accounts_patterns", [".*"])
+    )
+    internal = filter_matching(
+        accounts, config.get("accounts_internal_patterns", [".*"])
+    )
+    external = set(accounts).difference(value | internal)
+    return Accounts(value, internal, external)
 
 
 def _remove_account_from_tree(tree: Tree, account: str):
@@ -35,19 +44,6 @@ def _remove_account_from_tree(tree: Tree, account: str):
     _reduce_parents_balances(account, node, tree)
 
     del tree[account]
-
-
-def get_accounts_with_parents(accounts):
-    for value_acc in list(accounts):
-        for p in parents(value_acc):
-            accounts.add(p)
-    return accounts
-
-
-def filter_tree(tree, accounts_to_keep):
-    for account in list(tree.keys()):
-        if account not in accounts_to_keep:
-            _remove_account_from_tree(tree, account)
 
 
 def _reduce_parents_balances(account, node, tree):
@@ -68,3 +64,10 @@ def _is_value_account(account, patterns):
         if re.match(pattern, account):
             return True
     return False
+
+
+def get_accounts_with_parents(accounts):
+    for value_acc in list(accounts):
+        for p in parents(value_acc):
+            accounts.add(p)
+    return accounts
