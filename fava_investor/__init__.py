@@ -2,8 +2,7 @@
 
 from fava.ext import FavaExtensionBase
 
-import fava_investor.modules.performance.common
-import fava_investor.modules.performance.performance
+from .modules import performance
 from .modules.tlh import libtlh
 from .modules.assetalloc_class import libassetalloc
 from .modules.assetalloc_account import libaaacc
@@ -51,19 +50,19 @@ class Investor(FavaExtensionBase):  # pragma: no cover
     # -----------------------------------------------------------------------------------------------------------
     def build_balances_tree(self):
         accapi = FavaInvestorAPI(self.ledger)
-        return fava_investor.modules.performance.performance.get_balances_tree(accapi, self.config.get('performance', {}))
+        return performance.get_balances_tree(accapi, self.config.get('performance', {}))
 
     def build_contributions_journal(self):
         accapi = FavaInvestorAPI(self.ledger)
-        accounts = fava_investor.modules.performance.common.get_accounts_from_config(accapi, self.config.get('performance', {}))
-        contr = fava_investor.modules.performance.performance.ContributionsCalculator(accapi, accounts)
+        accounts = performance.get_accounts_from_config(accapi, self.config.get('performance', {}))
+        contr = performance.ContributionsCalculator(accapi, accounts)
         entries = contr.get_contributions_entries()
         return map(lambda entry: (entry.transaction, None, entry.change, entry.balance), entries)
 
     def build_withdrawals_journal(self):
         accapi = FavaInvestorAPI(self.ledger)
-        accounts = fava_investor.modules.performance.common.get_accounts_from_config(accapi, self.config.get('performance', {}))
-        contr = fava_investor.modules.performance.performance.ContributionsCalculator(accapi, accounts)
+        accounts = performance.get_accounts_from_config(accapi, self.config.get('performance', {}))
+        contr = performance.ContributionsCalculator(accapi, accounts)
         entries = contr.get_withdrawals_entries()
         return map(lambda entry: (entry.transaction, None, entry.change, entry.balance), entries)
 
