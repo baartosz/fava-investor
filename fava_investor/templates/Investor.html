@@ -11,7 +11,8 @@
     ('tlh', _('Tax Loss Harvestor')),
     ('balances', _('Balances')),
     ('contributions', _('Contributions')),
-    ('withdrawals', _('Withdrawals'))
+    ('withdrawals', _('Withdrawals')),
+    ('gains', _('Gains'))
     ] %}
   <h3><b>{% if not (module == key) %}<a href="{{ url_for_current(module=key) }}">{{ label }}</a>{% else %} {{ label }}{% endif %}</b></h3>
   {% endfor %}
@@ -187,6 +188,15 @@ Hold Ctrl or Cmd while clicking to expand one level.') %}
     <h2>Portfolio: Withdrawals</h2>
 
     {% set register = extension.build_withdrawals_journal() %}
+    {% import '_journal_table.html' as journal_table with context %}
+
+    {{ journal_table.journal_table(register, True) }}
+{% endif %}
+
+{% if (module == 'gains') %}
+    <h2>Portfolio: Gains</h2>
+
+    {% set register = extension.build_gains_journal() %}
     {% import '_journal_table.html' as journal_table with context %}
 
     {{ journal_table.journal_table(register, True) }}

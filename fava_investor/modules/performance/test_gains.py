@@ -1,29 +1,15 @@
-from pprint import pformat
-
-from beancount import loader
 from beancount.core.inventory import Inventory
-from beancount.ops import validation
 from beancount.utils import test_utils
 
-from beancountinvestorapi import AccAPI
 from .common import get_accounts_from_config
 from .performance import GainsCalculator
+from .test_balances import get_ledger
 
 CONFIG = {"accounts_patterns": ["^Assets:Account"], "accounts_internal_patterns": ["^Income:Gains$"]}
 
 
-def get_beancount_ledger(filename):
-    _, errors, _ = loader.load_file(
-        filename, extra_validations=validation.HARDCORE_VALIDATIONS
-    )
-    if errors:
-        raise ValueError("Errors in ledger file: \n" + pformat(errors))
-
-    return AccAPI(filename, {})
-
-
 def get_sut(filename, config) -> GainsCalculator:
-    accapi = get_beancount_ledger(filename)
+    accapi = get_ledger(filename)
     return GainsCalculator(accapi, get_accounts_from_config(accapi, config))
 
 
@@ -149,7 +135,7 @@ class TestGains(test_utils.TestCase):
           Income:Gains
         """
         sut = get_sut(filename, CONFIG)
-        result = sut.get_realized_gains()
+        result = sut.get_realized_gains_total()
 
         self.assertEquals(Inventory.from_string("1 USD"), result)
 
@@ -176,7 +162,7 @@ class TestGains(test_utils.TestCase):
           Income:Gains
         """
         sut = get_sut(filename, CONFIG)
-        result = sut.get_realized_gains()
+        result = sut.get_realized_gains_total()
 
         self.assertEquals(Inventory.from_string("3 USD"), result)
 
@@ -197,6 +183,6 @@ class TestGains(test_utils.TestCase):
           Income:Gains
         """
         sut = get_sut(filename, CONFIG)
-        result = sut.get_realized_gains()
+        result = sut.get_realized_gains_total()
 
         self.assertEquals(Inventory.from_string("-1 USD"), result)

@@ -9,7 +9,6 @@ from fava.core import Tree
 from fava.core.inventory import CounterInventory
 from fava.core.tree import TreeNode
 
-from beancountinvestorapi import AccAPI
 from .common import Accounts, filter_tree, get_accounts_from_config, get_accounts_with_parents
 from .returns import returns
 
@@ -18,14 +17,14 @@ Row = namedtuple("Row", "transaction change balance")
 
 
 class GainsCalculator:
-    def __init__(self, accapi: AccAPI, accounts: Accounts):
+    def __init__(self, accapi, accounts: Accounts):
         self.accapi = accapi
         self.accounts = accounts
 
     def get_unrealized_gains_per_account(self):
         tree = self.accapi.root_tree()
 
-        price_map = prices.build_price_map(self.accapi.entries)
+        price_map = prices.build_price_map(self.accapi.ledger.entries)
 
         result = {}
         for acc in self.accounts.value:
@@ -45,13 +44,13 @@ class GainsCalculator:
             total.add_inventory(gain)
         return total
 
-    def get_realized_gains(self):
-        rows = list(self._get_selling_transactions())
+    def get_realized_gains_total(self):
+        rows = list(self.get_realized_gains_entries())
         return rows[len(rows) - 1][-1]
 
-    def _get_selling_transactions(self):
+    def get_realized_gains_entries(self):
         entries, _ = returns.internalize(
-            self.accapi.entries, "Equity:Internalized", self.accounts.value, []
+            self.accapi.ledger.entries, "Equity:Internalized", self.accounts.value, []
         )
         balance = Inventory()
         for entry in entries:
@@ -67,7 +66,7 @@ class GainsCalculator:
                     internal.add_position(posting)
 
             balance.add_inventory(-internal)
-            yield entry, internal, balance
+            yield Row(entry, internal, balance)
 
     @staticmethod
     def _is_commodity_sale(entry: Transaction, value_accounts):

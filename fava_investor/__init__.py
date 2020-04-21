@@ -2,6 +2,7 @@
 
 from fava.ext import FavaExtensionBase
 
+from beancountinvestorapi import AccAPI
 from .modules import performance
 from .modules.tlh import libtlh
 from .modules.assetalloc_class import libassetalloc
@@ -65,5 +66,13 @@ class Investor(FavaExtensionBase):  # pragma: no cover
         contr = performance.ContributionsCalculator(accapi, accounts)
         entries = contr.get_withdrawals_entries()
         return map(lambda entry: (entry.transaction, None, entry.change, entry.balance), entries)
+
+    def build_gains_journal(self):
+        accapi = FavaInvestorAPI(self.ledger)
+        accounts = performance.get_accounts_from_config(accapi, self.config.get('performance', {}))
+        contr = performance.GainsCalculator(accapi, accounts)
+        entries = contr.get_realized_gains_entries()
+        return map(lambda entry: (entry.transaction, None, entry.change, entry.balance), entries)
+
 
 
