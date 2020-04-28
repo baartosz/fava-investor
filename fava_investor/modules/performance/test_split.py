@@ -19,6 +19,11 @@ from fava_investor.modules.performance.split import (
 
 class SplitTestCase(test_utils.TestCase):
     def assertInventoriesSum(self, inventory_string, inventories: list):
+        # try to sum nested lists of inventories first
+        if len(inventories) > 0 and isinstance(inventories[0], list) \
+                and len(inventories[0]) > 0 and isinstance(inventories[0][0], Inventory):
+            inventories = [sum_inventories(inv) for inv in inventories]
+
         self.assertEqual(
             Inventory.from_string(inventory_string),
             sum_inventories(inventories),
@@ -31,7 +36,7 @@ class SplitTestCase(test_utils.TestCase):
 
     def assertSumOfSplitsEqualValue(self, filename, account="Assets:Account"):
         ledger = get_ledger(filename)
-        split = get_split(filename)
+        split = get_split_parts(filename)
         final_value = get_value(
             ledger,
             build_price_map_with_fallback_to_cost(ledger.ledger.entries),
@@ -45,7 +50,7 @@ class SplitTestCase(test_utils.TestCase):
         )
 
     def assertSumOfSplitsEqual(self, filename, value):
-        split = get_split(filename)
+        split = get_split_parts(filename)
         self.assertEqual(
             self.get_split_sum(split),
             i(value),
@@ -54,12 +59,12 @@ class SplitTestCase(test_utils.TestCase):
 
     def get_readable_splits(self, split):
         return (
-            f"\ncontrib    {split.contributions}"
-            + f"\nwithdrawal {split.withdrawals}"
-            + f"\ndividends  {split.dividends}"
-            + f"\ncosts      {split.costs}"
-            + f"\ngains r.   {split.gains_realized}"
-            + f"\ngains u.   {split.gains_unrealized}"
+                f"\ncontrib    {split.contributions}"
+                + f"\nwithdrawal {split.withdrawals}"
+                + f"\ndividends  {split.dividends}"
+                + f"\ncosts      {split.costs}"
+                + f"\ngains r.   {split.gains_realized}"
+                + f"\ngains u.   {split.gains_unrealized}"
         )
 
     def get_split_sum(self, split):
@@ -224,7 +229,7 @@ class TestPriceMap(SplitTestCase):
 
     @test_utils.docfile
     def test_no_fallback_if_there_is_price_in_following_entries_with_same_date(
-        self, filename
+            self, filename
     ):
         """
         2020-01-01 open Assets:Account
@@ -242,6 +247,59 @@ class TestPriceMap(SplitTestCase):
         self.assertEqual(
             i("2 USD"), get_value(ledger, price_map, "Assets:Account", "2020-01-02")
         )
+
+
+class TestAccountFiltering(SplitTestCase):
+    @test_utils.docfile
+    def test_filter_one_account(self, filename):
+        """
+        2020-01-01 open Assets:Account
+        2020-01-01 open Assets:Account:Sub
+        2020-01-01 open Assets:Account:Sub:Sub
+        2020-01-01 open Assets:Bank
+
+        2020-01-01 * "contribution"
+            Assets:Account  1 USD
+            Assets:Account:Sub  1 USD
+            Assets:Account:Sub:Sub  1 USD
+            Assets:Bank
+        """
+        splits = get_split_parts(filename, filter_account="^Assets:Account:Sub$")
+        self.assertInventoriesSum("1 USD", splits)
+        self.assertInventoriesSum("1 USD", splits.contributions)
+
+    #
+    # @test_utils.docfile
+    # def test_filter_account_with_subaccounts(self, filename):
+    #     """
+    #     2020-01-01 open Assets:Account
+    #     2020-01-01 open Assets:Account:Sub
+    #     2020-01-01 open Assets:Account:Sub:Sub
+    #     2020-01-01 open Assets:Bank
+    #
+    #     2020-01-01 * "contribution"
+    #         Assets:Account  1 USD
+    #         Assets:Account:Sub  1 USD
+    #         Assets:Account:Sub:Sub  1 USD
+    #         Assets:Bank
+    #     """
+    #     splits = get_split_parts(filename, filter_account="^Assets:Account:Sub")
+    #     self.assertInventoriesSum("2 USD", splits)
+    #
+    # @test_utils.docfile
+    # def test_simple_transfer(self, filename):
+    #     """
+    #     2020-01-01 open Assets:Account
+    #     2020-01-01 open Assets:Account:Sub
+    #     2020-01-01 open Assets:Bank
+    #
+    #     2020-01-01 * "contribution"
+    #         Assets:Account  1 USD
+    #         Assets:Bank
+    #     """
+    #     splits = get_split_parts(filename, filter_account="^Assets:Account:A")
+    #
+    #     self.assertInventoriesSum("2 USD", splits)
 
 
 class TestCalculateBalances(test_utils.TestCase):
@@ -281,12 +339,12 @@ def get_ledger(filename):
     return FavaInvestorAPI(FavaLedger(filename))
 
 
-def get_split(filename, config_override=None):
-    split = get_split_with_meta(filename, config_override)
+def get_split_parts(filename, config_override=None, filter_account=".+"):
+    split = get_split_with_meta(filename, config_override, filter_account)
     return split.parts
 
 
-def get_split_with_meta(filename, config_override=None):
+def get_split_with_meta(filename, config_override=None, filter_account=".+"):
     defaults = {
         "accounts_pattern": "^Assets:Account",
         "accounts_income_pattern": "^Income:",
@@ -303,6 +361,7 @@ def get_split_with_meta(filename, config_override=None):
         config["accounts_income_pattern"],
         config["accounts_expenses_pattern"],
         config["accounts_internalized_pattern"],
+        filter_account
     )
     return split
 

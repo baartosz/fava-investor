@@ -1,7 +1,7 @@
 from beancount.core.data import Transaction
 from beancount.utils import test_utils
 
-from .test_split import SplitTestCase, i, get_split, get_split_with_meta
+from .test_split import SplitTestCase, i, get_split_parts, get_split_with_meta
 
 
 class TestWithdrawals(SplitTestCase):
@@ -14,12 +14,12 @@ class TestWithdrawals(SplitTestCase):
 
         2020-01-02 * "transfer"
             Assets:Account:Loan  6 GBP
-            Assets:Account:Asset  -1 AA {11 GBP}
-            Assets:Bank  5 GBP
+            Assets:Account:Asset  -2 AA {5 GBP}
+            Assets:Bank  4 GBP
         """
-        split = get_split(filename)
+        split = get_split_parts(filename)
 
-        self.assertInventoriesSum("-5 GBP", split.withdrawals)
+        self.assertInventoriesSum("-4 GBP", split.withdrawals)
 
     @test_utils.docfile
     def test_list_withdrawals_entries(self, filename: str):
@@ -61,5 +61,5 @@ class TestWithdrawals(SplitTestCase):
         2020-01-01 open Assets:Account
         2020-01-01 open Assets:Account:Sub
         """
-        split = get_split(filename)
+        split = get_split_parts(filename)
         self.assertInventoriesSum("0", split.withdrawals)

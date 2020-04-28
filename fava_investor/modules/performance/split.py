@@ -22,9 +22,10 @@ def get_balance_split_history(
     income_pattern="^Income:",
     expenses_pattern="^Expenses:",
     pattern_internalized="^Income:Dividend",
+    filter_account=".+"
 ):
     accounts = accapi.accounts
-    accounts_value = set([acc for acc in accounts if re.match(pattern_value, acc)])
+    accounts_value = set([acc for acc in accounts if re.match(pattern_value, acc) and re.match(filter_account, acc)])
     accounts_internalized = set(
         [acc for acc in accounts if re.match(pattern_internalized, acc)]
     )
@@ -73,16 +74,13 @@ def get_balance_split_history(
         balance += include_postings(entry, accounts_value)
 
         if value and external:
-            contributions += include_postings(
-                entry,
-                exclude_accounts=accounts_value | accounts_internal,
-                lambda_filter=lambda posting: posting.units.number < 0,
-            )
-            withdrawals += include_postings(
-                entry,
-                exclude_accounts=accounts_value | accounts_internal,
-                lambda_filter=lambda posting: posting.units.number > 0,
-            )
+            value_change = include_postings_prefer_cost(entry, include_accounts=accounts_value | accounts_internal)
+            for position in  value_change.get_positions():
+                if position.units.number > 0:
+                    contributions.add_position(position)
+                else:
+                    withdrawals.add_position(position)
+
 
         if (value and internal and not is_commodity_sale(entry, accounts_value)) or (
             not value and income and external
@@ -106,8 +104,8 @@ def get_balance_split_history(
         unrealized_gain_change = unrealized_gain + -last_unrealized_gain
         last_unrealized_gain = unrealized_gain
 
-        split_entries.contributions.append(-contributions)
-        split_entries.withdrawals.append(-withdrawals)
+        split_entries.contributions.append(contributions)
+        split_entries.withdrawals.append(withdrawals)
         split_entries.dividends.append(-dividends)
         split_entries.costs.append(-costs)
         split_entries.gains_realized.append(-gains_realized)
@@ -138,6 +136,28 @@ def sum_inventories(inv_list):
 
 def get_matching_accounts(accounts, pattern):
     return set([acc for acc in accounts if re.match(pattern, acc)])
+
+
+def include_postings_prefer_cost(
+        transaction, include_accounts=None, exclude_accounts=None, lambda_filter=None
+):
+    exclude_accounts = exclude_accounts if exclude_accounts else []
+    lambda_filter = lambda_filter if lambda_filter is not None else lambda x: True
+    inventory = Inventory()
+
+    for posting in transaction.postings:
+        if (
+                (include_accounts is None or posting.account in include_accounts)
+                and posting.account not in exclude_accounts
+                and lambda_filter(posting)
+        ):
+            if posting.cost is not None:
+                number = posting.cost.number * posting.units.number
+                inventory.add_amount(Amount(number, posting.cost.currency))
+            else:
+                inventory.add_position(posting)
+
+    return inventory
 
 
 def include_postings(

@@ -2,7 +2,7 @@ from beancount.core.data import Transaction
 from beancount.core.inventory import Inventory
 from beancount.utils import test_utils
 
-from .test_split import SplitTestCase, get_split, get_split_with_meta
+from .test_split import SplitTestCase, get_split_parts, get_split_with_meta
 
 
 class TestContributions(SplitTestCase):
@@ -96,7 +96,7 @@ class TestContributions(SplitTestCase):
         """
         self.skipTest("value account filtering not implemented")
 
-        split = get_split(filename)
+        split = get_split_parts(filename)
         self.assertInventoriesSum("2 GBP", split.contributions)
 
     @test_utils.docfile
@@ -114,5 +114,5 @@ class TestContributions(SplitTestCase):
             Assets:Bank  -5 GBP
 
         """
-        split = get_split(filename)
+        split = get_split_parts(filename)
         self.assertInventoriesSum("5 GBP", split.contributions)

@@ -3,6 +3,7 @@ import copy
 
 from beancount.core.inventory import Inventory
 from fava.ext import FavaExtensionBase
+from flask import g
 
 from .modules import performance
 from .modules.performance.balances import get_balances_tree
@@ -57,6 +58,7 @@ class Investor(FavaExtensionBase):  # pragma: no cover
         return get_balances_tree(accapi, self.config.get('performance', {}))
 
     def get_split(self):
+        account_filter = g.filters['account']
         config = self.config.get("performance", {})
         split = get_balance_split_history(FavaInvestorAPI(self.ledger),
                                           config.get("accounts_pattern", "^Assets:Investments"),

@@ -1,6 +1,6 @@
 from beancount.utils import test_utils
 
-from .test_split import SplitTestCase, get_split
+from .test_split import SplitTestCase, get_split_parts
 
 
 class TestCosts(SplitTestCase):
@@ -14,7 +14,7 @@ class TestCosts(SplitTestCase):
             Assets:Account  -5 GBP
             Expenses:ServiceFee
         """
-        split = get_split(filename)
+        split = get_split_parts(filename)
         self.assertInventoriesSum("-5 GBP", split.costs)
 
     @test_utils.docfile

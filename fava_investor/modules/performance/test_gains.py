@@ -1,6 +1,6 @@
 from beancount.utils import test_utils
 
-from .test_split import SplitTestCase, get_split, get_split_with_meta
+from .test_split import SplitTestCase, get_split_parts, get_split_with_meta
 
 
 class TestGains(SplitTestCase):
@@ -16,7 +16,7 @@ class TestGains(SplitTestCase):
 
         2020-02-22 price AA  2 USD
         """
-        split = get_split(filename)
+        split = get_split_parts(filename)
         self.assertInventoriesSum("1 USD", split.gains_unrealized)
 
     @test_utils.docfile
@@ -31,7 +31,7 @@ class TestGains(SplitTestCase):
 
         2020-02-22 price AA  2 USD
         """
-        split = get_split(filename)
+        split = get_split_parts(filename)
         self.assertInventoriesSum("", split.gains_unrealized)
 
     @test_utils.docfile
@@ -57,7 +57,7 @@ class TestGains(SplitTestCase):
 
         2020-02-24 price AA  10 USD
         """
-        split = get_split(filename)
+        split = get_split_parts(filename)
         self.assertInventoriesSum("8 USD", split.gains_unrealized)
 
     @test_utils.docfile
@@ -72,7 +72,7 @@ class TestGains(SplitTestCase):
 
         2020-02-22 price AA  2 USD
         """
-        split = get_split(filename)
+        split = get_split_parts(filename)
         self.assertInventoriesSum("1 USD", split.gains_unrealized)
 
     @test_utils.docfile
@@ -91,7 +91,7 @@ class TestGains(SplitTestCase):
           Assets:Bank  2 USD
           Income:Gains
         """
-        split = get_split(filename)
+        split = get_split_parts(filename)
         self.assertInventoriesSum("1 USD", split.gains_realized)
 
     @test_utils.docfile
@@ -116,7 +116,7 @@ class TestGains(SplitTestCase):
           Assets:Bank  3 USD
           Income:Gains  -2 USD
         """
-        split = get_split(filename)
+        split = get_split_parts(filename)
         self.assertInventoriesSum("3 USD", split.gains_realized)
 
     @test_utils.docfile
