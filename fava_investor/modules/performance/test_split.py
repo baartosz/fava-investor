@@ -360,8 +360,7 @@ def get_split_with_meta(filename, config_override=None, filter_account=".+"):
         config["accounts_pattern"],
         config["accounts_income_pattern"],
         config["accounts_expenses_pattern"],
-        config["accounts_internalized_pattern"],
-        filter_account
+        filter_account=filter_account
     )
     return split
 

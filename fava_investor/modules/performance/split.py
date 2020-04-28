@@ -21,14 +21,10 @@ def get_balance_split_history(
     pattern_value,
     income_pattern="^Income:",
     expenses_pattern="^Expenses:",
-    pattern_internalized="^Income:Dividend",
     filter_account=".+"
 ):
     accounts = accapi.accounts
     accounts_value = set([acc for acc in accounts if re.match(pattern_value, acc) and re.match(filter_account, acc)])
-    accounts_internalized = set(
-        [acc for acc in accounts if re.match(pattern_internalized, acc)]
-    )
     accounts_expenses = set(
         [acc for acc in accounts if re.match(expenses_pattern, acc)]
     )
@@ -52,8 +48,7 @@ def get_balance_split_history(
 
     is_external = (
         lambda acc: acc not in accounts_value
-        and acc not in accounts_internal
-        and acc not in accounts_internalized
+                    and acc not in accounts_internal
     )
     for entry in accapi.ledger.entries:
         if not isinstance(entry, Transaction):
@@ -66,7 +61,6 @@ def get_balance_split_history(
         gains_realized = Inventory()
 
         value = any([p.account in accounts_value for p in entry.postings])
-        internal = any([p.account in accounts_internal for p in entry.postings])
         income = any([p.account in accounts_income for p in entry.postings])
         expense = any([p.account in accounts_expenses for p in entry.postings])
         external = any([is_external(p.account) for p in entry.postings])
@@ -75,15 +69,14 @@ def get_balance_split_history(
 
         if value and external:
             value_change = include_postings_prefer_cost(entry, include_accounts=accounts_value | accounts_internal)
-            for position in  value_change.get_positions():
+            for position in value_change.get_positions():
                 if position.units.number > 0:
                     contributions.add_position(position)
                 else:
                     withdrawals.add_position(position)
 
-
-        if (value and internal and not is_commodity_sale(entry, accounts_value)) or (
-            not value and income and external
+        if (value and (income or expense) and not is_commodity_sale(entry, accounts_value)) or (
+                not value and income and external
         ):
             dividends += include_postings(
                 entry,
@@ -161,7 +154,7 @@ def include_postings_prefer_cost(
 
 
 def include_postings(
-    transaction, include_accounts=None, exclude_accounts=None, lambda_filter=None
+        transaction, include_accounts=None, exclude_accounts=None, lambda_filter=None
 ):
     exclude_accounts = exclude_accounts if exclude_accounts else []
     lambda_filter = lambda_filter if lambda_filter is not None else lambda x: True
@@ -169,9 +162,9 @@ def include_postings(
 
     for posting in transaction.postings:
         if (
-            (include_accounts is None or posting.account in include_accounts)
-            and posting.account not in exclude_accounts
-            and lambda_filter(posting)
+                (include_accounts is None or posting.account in include_accounts)
+                and posting.account not in exclude_accounts
+                and lambda_filter(posting)
         ):
             inventory.add_position(posting)
 
@@ -217,9 +210,9 @@ def build_price_map_with_fallback_to_cost(entries):
 
         for p in entry.postings:
             if (
-                p.cost is not None
-                and p.units is not None
-                and (p.units.currency, p.cost.currency) not in prices
+                    p.cost is not None
+                    and p.units is not None
+                    and (p.units.currency, p.cost.currency) not in prices
             ):
                 key = (entry.date, p.units.currency, p.cost.currency)
                 buying_prices[key] = Price(
