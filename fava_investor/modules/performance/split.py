@@ -26,7 +26,9 @@ def calculate_split_parts(
         pattern_value,
         income_pattern="^Income:",
         expenses_pattern="^Expenses:",
-        interval=None
+        interval=None,
+        begin=None,
+        end=None
 ):
     entries = accapi.ledger.entries
 
@@ -47,6 +49,12 @@ def calculate_split_parts(
     first = True
     for entry in entries:
         if not isinstance(entry, Transaction):
+            continue
+
+        entry:Transaction
+        if begin is not None and begin > entry.date:
+            continue
+        if end is not None and end <= entry.date:
             continue
 
         split.transactions.append(entry)

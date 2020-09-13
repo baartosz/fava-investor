@@ -1,3 +1,5 @@
+import datetime
+
 from beancount.core.data import Transaction
 from beancount.core.inventory import Inventory
 from beancount.utils import test_utils
@@ -131,4 +133,27 @@ class TestContributions(SplitTestCase):
             Assets:Bank2  -10 GBP
         """
         split = get_interval_balances(filename)
+        self.assertInventoriesSum("1 GBP", split.contributions)
+
+    @test_utils.docfile
+    def test_respecting_date_filters(self, filename: str):
+        """
+        2020-01-01 open Assets:Bank
+        2020-01-01 open Assets:Bank2
+        2020-01-01 open Assets:Bank3
+        2020-01-01 open Assets:Account:Asset
+
+        2020-01-02 * "transfer"
+            Assets:Account:Asset  1 GBP
+            Assets:Bank  -1 GBP
+
+        2020-01-03 * "transfer"
+            Assets:Account:Asset  1 GBP
+            Assets:Bank  -1 GBP
+
+        2020-01-04 * "transfer"
+            Assets:Account:Asset  1 GBP
+            Assets:Bank  -1 GBP
+        """
+        split = get_interval_balances(filename, begin="2020-01-03", end="2020-01-04")
         self.assertInventoriesSum("1 GBP", split.contributions)

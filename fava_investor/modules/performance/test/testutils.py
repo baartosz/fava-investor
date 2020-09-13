@@ -1,5 +1,6 @@
 import datetime
 from pprint import pformat
+from typing import Union
 
 from beancount import loader
 from beancount.core import convert
@@ -70,12 +71,15 @@ def get_ledger(filename):
     return FavaInvestorAPI(FavaLedger(filename))
 
 
-def get_interval_balances(filename, config_override=None, interval='transaction'):
-    split = get_interval_balances_with_meta(filename, config_override, interval=interval)
+def get_interval_balances(filename, config_override=None, interval='transaction', begin=None, end=None):
+    split = get_interval_balances_with_meta(filename, config_override, interval=interval, begin=begin, end=end)
     return split.parts
 
 
-def get_interval_balances_with_meta(filename, config_override=None, interval='transaction'):
+def get_interval_balances_with_meta(filename, config_override=None, interval='transaction', begin=None, end=None):
+    begin = convert_date_string(begin)
+    end = convert_date_string(end)
+
     defaults = {
         "accounts_pattern": "^Assets:Account",
         "accounts_income_pattern": "^Income:",
@@ -91,9 +95,15 @@ def get_interval_balances_with_meta(filename, config_override=None, interval='tr
         config["accounts_pattern"],
         config["accounts_income_pattern"],
         config["accounts_expenses_pattern"],
-        interval=interval
+        interval=interval,
+        begin=begin,
+        end=end
     )
     return balances
+
+
+def convert_date_string(end: Union[str, None]) -> Union[datetime.datetime,None]:
+    return end if end is None else datetime.datetime.strptime(end, "%Y-%m-%d").date()
 
 
 def sum_inteval_balances(balances):

@@ -16,30 +16,7 @@ from .common.favainvestorapi import FavaInvestorAPI
 
 
 class Investor(FavaExtensionBase):  # pragma: no cover
-    report_title = "Investor"
-
-    # AssetAllocClass
-    # -----------------------------------------------------------------------------------------------------------
-    def build_assetalloc_by_class(self, begin=None, end=None):
-        accapi = FavaInvestorAPI(self.ledger)
-        return libassetalloc.assetalloc(accapi, self.config.get('asset_alloc_by_class', {}))
-
-    # AssetAllocAccount
-    # -----------------------------------------------------------------------------------------------------------
-    def build_aa_by_account(self, begin=None, end=None):
-        accapi = FavaInvestorAPI(self.ledger)
-        # if begin:
-        #     tree = Tree(iter_entry_dates(self.ledger.entries, begin, end))
-        # else:
-        #     tree = self.ledger.root_tree
-
-        return libaaacc.portfolio_accounts(accapi, self.config.get('asset_alloc_by_account', []))
-
-    # Cash Drag
-    # -----------------------------------------------------------------------------------------------------------
-    def build_cashdrag(self, begin=None, end=None):
-        accapi = FavaInvestorAPI(self.ledger)
-        return libcashdrag.find_loose_cash(accapi, self.config.get('cashdrag', {}))
+    report_title = "Split"
 
     # TaxLossHarvester
     # -----------------------------------------------------------------------------------------------------------
@@ -57,19 +34,21 @@ class Investor(FavaExtensionBase):  # pragma: no cover
         accapi = FavaInvestorAPI(self.ledger)
         return get_balances_tree(accapi, self.config.get('performance', {}))
 
-    def get_split(self, accumulators, for_journal=False):
+    def _get_split(self, accumulators, for_journal=False):
         config = self.config.get("performance", {})
         split = calculate_split_parts(FavaInvestorAPI(self.ledger),
                                       accumulators,
                                       config.get("accounts_pattern", "^Assets:Investments"),
                                       config.get("accounts_income_pattern", "^Income:"),
                                       config.get("accounts_expenses_pattern", "^Expenses:"),
-                                      interval='transaction' if for_journal else None
+                                      interval='transaction' if for_journal else None,
+                                      begin=self.ledger.filters.time.begin_date,
+                                      end=self.ledger.filters.time.end_date,
                                       )
         return split
 
     def build_split_journal(self, kind):
-        split = self.get_split([kind], True)
+        split = self._get_split([kind], True)
         split_values = getattr(split.parts, kind)
         to_keep = []
         for index in range(0, len(split.transactions)):
@@ -80,8 +59,8 @@ class Investor(FavaExtensionBase):  # pragma: no cover
         return [(split.transactions[i], None, split_values[i], balances[i]) for i in range(0, len(split.transactions))
                 if i in to_keep]
 
-    def split_summary(self):
-        split = self.get_split(
+    def split_summary(self, begin=None, end=None):
+        split = self._get_split(
             ['contributions', 'withdrawals', 'dividends', 'costs', 'gains_realized', 'gains_unrealized',
              'value_changes'])
         parts = split.parts
