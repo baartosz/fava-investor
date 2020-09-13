@@ -30,7 +30,7 @@ class TestIntervals(SplitTestCase):
         """
         2020-01-01 open Assets:Account
         2020-01-01 open Assets:Bank
-        2020-01-01 open Income:Dividend
+        2020-01-01 open Income:Dividends
         2020-01-01 open Income:Gains
         2020-01-01 open Expenses:Costs
 
@@ -40,7 +40,7 @@ class TestIntervals(SplitTestCase):
 
         2020-01-02 * "dividend"
             Assets:Account
-            Income:Dividend  -4 USD
+            Income:Dividends  -4 USD
 
         2020-01-02 price AA 3 USD
 
@@ -78,7 +78,7 @@ class TestIntervals(SplitTestCase):
         """
         2020-01-01 open Assets:Account
         2020-01-01 open Assets:Bank
-        2020-01-01 open Income:Dividend
+        2020-01-01 open Income:Dividends
         2020-01-01 open Income:Gains
         2020-01-01 open Expenses:Costs
 
@@ -88,7 +88,7 @@ class TestIntervals(SplitTestCase):
 
         2020-01-02 * "dividend"
             Assets:Account
-            Income:Dividend  -4 USD
+            Income:Dividends  -4 USD
 
         2020-01-02 price AA 3 USD
 

@@ -1,10 +1,12 @@
 """Fava Investor: Investing related reports and tools for Beancount/Fava"""
 import copy
+import re
 
 from beancount.core.inventory import Inventory
 from fava.ext import FavaExtensionBase
 
 from .modules import performance
+from .modules.performance.accumulators import Accounts
 from .modules.performance.balances import get_balances_tree
 from .modules.performance.split import calculate_split_parts, sum_inventories, calculate_balances
 from .modules.tlh import libtlh
@@ -13,6 +15,31 @@ from .modules.assetalloc_account import libaaacc
 from .modules.cashdrag import libcashdrag
 from .common.favainvestorapi import FavaInvestorAPI
 
+
+def extract_accounts(accounts, expenses_pattern, income_pattern, pattern_value):
+    accounts_value = set([acc for acc in accounts if re.match(pattern_value, acc)])
+    accounts_expenses = set(
+        [acc for acc in accounts if re.match(expenses_pattern, acc)]
+    )
+    accounts_income = set([acc for acc in accounts if re.match(income_pattern, acc)])
+    accounts = Accounts(accounts_value, accounts_income, accounts_expenses)
+    return accounts
+
+
+def split_with_fava_config(ledger, accumulators, config, for_journal, ledger_accounts):
+    accounts = extract_accounts(ledger_accounts,
+                                config.get("accounts_pattern", "^Assets:Investments"),
+                                config.get("accounts_income_pattern", "^Income:"),
+                                config.get("accounts_expenses_pattern", "^Expenses:")
+                                )
+    split = calculate_split_parts(ledger.entries,
+                                  accounts,
+                                  accumulators,
+                                  interval='transaction' if for_journal else None,
+                                  begin=ledger.filters.time.begin_date,
+                                  end=ledger.filters.time.end_date,
+                                  )
+    return split
 
 
 class Investor(FavaExtensionBase):  # pragma: no cover
@@ -36,15 +63,8 @@ class Investor(FavaExtensionBase):  # pragma: no cover
 
     def _get_split(self, accumulators, for_journal=False):
         config = self.config.get("performance", {})
-        split = calculate_split_parts(FavaInvestorAPI(self.ledger),
-                                      accumulators,
-                                      config.get("accounts_pattern", "^Assets:Investments"),
-                                      config.get("accounts_income_pattern", "^Income:"),
-                                      config.get("accounts_expenses_pattern", "^Expenses:"),
-                                      interval='transaction' if for_journal else None,
-                                      begin=self.ledger.filters.time.begin_date,
-                                      end=self.ledger.filters.time.end_date,
-                                      )
+        ledger_accounts = self.ledger.accounts
+        split = split_with_fava_config(self.ledger, accumulators, config, for_journal, ledger_accounts)
         return split
 
     def build_split_journal(self, kind):

@@ -23,14 +23,14 @@ class TestContributions(SplitTestCase):
         """
         2020-01-01 open Assets:Bank
         2020-01-01 open Assets:Account
-        2020-01-01 open Assets:Account:Sub
+        2020-01-01 open Assets:Account:A
 
         2020-01-01 * "contrib 1"
             Assets:Account  10 GBP
             Assets:Bank
 
         2020-01-01 * "contrib 2"
-            Assets:Account:Sub  10 GBP
+            Assets:Account:A  10 GBP
             Assets:Bank
         """
         self.assertSumOfSplitsEqual(filename, "20 GBP")
@@ -41,11 +41,11 @@ class TestContributions(SplitTestCase):
         2020-01-01 open Assets:Bank
         2020-01-01 open Assets:Bank2
         2020-01-01 open Assets:Account
-        2020-01-01 open Assets:Account:Sub
+        2020-01-01 open Assets:Account:A
 
         2020-01-01 * "irrelevant"
             Assets:Account  10 GBP
-            Assets:Account:Sub
+            Assets:Account:A
 
         2020-01-01 * "irrelevant"
             Assets:Bank  20 GBP

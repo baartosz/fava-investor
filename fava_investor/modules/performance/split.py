@@ -1,6 +1,6 @@
 import copy
-import re
 from collections import namedtuple
+from typing import List
 
 from beancount.core.amount import Amount
 from beancount.core.data import Transaction, Price
@@ -21,17 +21,13 @@ Change = namedtuple("Change", "transaction change")
 
 
 def calculate_split_parts(
-        accapi,
-        accumulators_ids,
-        pattern_value,
-        income_pattern="^Income:",
-        expenses_pattern="^Expenses:",
+        entries,
+        accounts: Accounts,
+        accumulators_ids: List[str],
         interval=None,
         begin=None,
         end=None
 ):
-    entries = accapi.ledger.entries
-
     # move that to u. gain accumulator, e.g. init()?
     add_dummy_transaction_if_has_entries_after_last_transaction(entries)
 
@@ -40,7 +36,6 @@ def calculate_split_parts(
         dates = get_interval_end_dates(entries, interval)
         next_interval_start = dates.pop()
 
-    accounts = extract_accounts(accapi, expenses_pattern, income_pattern, pattern_value)
     accumulators = get_accumulators(accounts, entries, accumulators_ids)
 
     split_entries = SplitParts([], [], [], [], [], [], [], [])
@@ -51,7 +46,7 @@ def calculate_split_parts(
         if not isinstance(entry, Transaction):
             continue
 
-        entry:Transaction
+        entry: Transaction
         if begin is not None and begin > entry.date:
             continue
         if end is not None and end <= entry.date:
@@ -94,18 +89,7 @@ def add_dummy_transaction_if_has_entries_after_last_transaction(entries):
         )
 
 
-def extract_accounts(accapi, expenses_pattern, income_pattern, pattern_value):
-    accounts = accapi.accounts
-    accounts_value = set([acc for acc in accounts if re.match(pattern_value, acc)])
-    accounts_expenses = set(
-        [acc for acc in accounts if re.match(expenses_pattern, acc)]
-    )
-    accounts_income = set([acc for acc in accounts if re.match(income_pattern, acc)])
-    accounts = Accounts(accounts_value, accounts_income, accounts_expenses)
-    return accounts
-
-
-def get_accumulators(accounts, entries, ids):
+def get_accumulators(accounts: Accounts, entries, ids: List[str]):
     price_map = build_price_map_with_fallback_to_cost(entries)
     accs = {
         'contributions': lambda: ContributionAccumulator(accounts),

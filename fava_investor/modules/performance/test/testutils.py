@@ -10,7 +10,7 @@ from beancount.ops import validation
 from beancount.utils import test_utils
 from fava.core import FavaLedger
 
-from fava_investor import sum_inventories, FavaInvestorAPI, calculate_split_parts
+from fava_investor import sum_inventories, FavaInvestorAPI, calculate_split_parts, Accounts
 from fava_investor.modules.performance.split import build_price_map_with_fallback_to_cost
 
 
@@ -80,21 +80,16 @@ def get_interval_balances_with_meta(filename, config_override=None, interval='tr
     begin = convert_date_string(begin)
     end = convert_date_string(end)
 
-    defaults = {
-        "accounts_pattern": "^Assets:Account",
-        "accounts_income_pattern": "^Income:",
-        "accounts_expenses_pattern": "^Expenses:",
-    }
-    if not config_override:
-        config_override = {}
-    config = {**defaults, **config_override}
-    ledger = get_ledger(filename)
+    accounts = Accounts(
+        value={"Assets:Account", "Assets:Account:A", "Assets:Account:B", "Assets:Account:Loan", "Assets:Account:Asset"},
+        expenses={"Expenses:Commission", "Expenses:Costs", "Expenses:PlatformFee", "Expenses:A", "Expenses:B"},
+        income={"Income:Gains", "Income:Dividends"}
+    )
+    accapi = get_ledger(filename)
     balances = calculate_split_parts(
-        ledger,
+        accapi.ledger.entries,
+        accounts,
         ['contributions', 'withdrawals', 'costs', 'dividends', 'gains_realized', 'gains_unrealized'],
-        config["accounts_pattern"],
-        config["accounts_income_pattern"],
-        config["accounts_expenses_pattern"],
         interval=interval,
         begin=begin,
         end=end
@@ -107,14 +102,14 @@ def convert_date_string(end: Union[str, None]) -> Union[datetime.datetime,None]:
 
 
 def sum_inteval_balances(balances):
-    sum = Inventory()
-    sum += sum_inventories(balances.contributions)
-    sum += sum_inventories(balances.withdrawals)
-    sum += sum_inventories(balances.costs)
-    sum += sum_inventories(balances.dividends)
-    sum += sum_inventories(balances.gains_realized)
-    sum += sum_inventories(balances.gains_unrealized)
-    return sum
+    total = Inventory()
+    total += sum_inventories(balances.contributions)
+    total += sum_inventories(balances.withdrawals)
+    total += sum_inventories(balances.costs)
+    total += sum_inventories(balances.dividends)
+    total += sum_inventories(balances.gains_realized)
+    total += sum_inventories(balances.gains_unrealized)
+    return total
 
 
 def i(string=""):

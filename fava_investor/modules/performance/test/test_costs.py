@@ -8,11 +8,11 @@ class TestCosts(SplitTestCase):
     def test_cost(self, filename: str):
         """
         2020-01-01 open Assets:Account
-        2020-01-01 open Expenses:ServiceFee
+        2020-01-01 open Expenses:PlatformFee
 
         2020-01-01 * "dividend"
             Assets:Account  -5 GBP
-            Expenses:ServiceFee
+            Expenses:PlatformFee
         """
         split = get_interval_balances(filename)
         self.assertInventoriesSum("-5 GBP", split.costs)
