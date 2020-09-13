@@ -1,8 +1,8 @@
 from beancount.utils import test_utils
 from freezegun import freeze_time
 
-from fava_investor.modules.performance.balances import get_balances_tree
-from fava_investor.modules.performance.test.testutils import SplitTestCase, get_ledger
+from fava_investor.modules.split.balances import get_balances_tree
+from fava_investor.modules.split.test.testutils import SplitTestCase, get_ledger
 
 CONFIG = {"accounts_pattern": "^Assets:Account"}
 

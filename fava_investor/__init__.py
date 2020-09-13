@@ -5,10 +5,10 @@ import re
 from beancount.core.inventory import Inventory
 from fava.ext import FavaExtensionBase
 
-from .modules import performance
-from .modules.performance.accumulators import Accounts
-from .modules.performance.balances import get_balances_tree
-from .modules.performance.split import calculate_split_parts, sum_inventories, calculate_balances
+from .modules import split
+from .modules.split.accumulators import Accounts
+from .modules.split.balances import get_balances_tree
+from .modules.split.split import calculate_split_parts, sum_inventories, calculate_balances
 from .modules.tlh import libtlh
 from .modules.assetalloc_class import libassetalloc
 from .modules.assetalloc_account import libaaacc
@@ -99,23 +99,27 @@ class Investor(FavaExtensionBase):  # pragma: no cover
     def split_summary(self, portfolio):
         split = self._get_split(portfolio,
             ['contributions', 'withdrawals', 'dividends', 'costs', 'gains_realized', 'gains_unrealized',
-             'value_changes'])
+             'balance'])
         parts = split.parts
         summary = {'contributions': sum_inventories(parts.contributions),
                    'withdrawals': sum_inventories(parts.withdrawals),
+                   '(net_contrib.)': sum_inventories(parts.contributions + parts.withdrawals),
                    'dividends': sum_inventories(parts.dividends),
                    'costs': sum_inventories(parts.costs),
+                   '(net_div.)': sum_inventories(parts.dividends+ parts.costs),
                    'gains_realized': sum_inventories(parts.gains_realized),
                    'gains_unrealized': sum_inventories(parts.gains_unrealized),
+                   '(net_gains)': sum_inventories(parts.gains_realized+ parts.gains_unrealized),
                    }
 
         sum_of_splits = Inventory()
-        for balance in summary.values():
-            sum_of_splits += balance
+        for key, balance in summary.items():
+            if '(' not in key:
+                sum_of_splits += balance
 
-        summary['value_changes'] = parts.value_changes[0]
+        summary['balance'] = parts.balance[0]
         summary["sum_of_splits"] = sum_of_splits
-        summary["error"] = sum_of_splits + -parts.value_changes[0]
+        summary["error"] = sum_of_splits + -parts.balance[0]
         return summary
 
     def accounts(self, portfolio):

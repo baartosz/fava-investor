@@ -1,7 +1,7 @@
 from beancount.utils import test_utils
 
 from fava_investor import calculate_balances
-from fava_investor.modules.performance.test.testutils import i
+from fava_investor.modules.split.test.testutils import i
 
 
 class TestCalculateBalances(test_utils.TestCase):

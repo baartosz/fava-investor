@@ -1,7 +1,7 @@
 from beancount.utils import test_utils
 from fava.util.date import Interval
 
-from fava_investor.modules.performance.test.testutils import SplitTestCase, get_interval_balances, \
+from fava_investor.modules.split.test.testutils import SplitTestCase, get_interval_balances, \
     get_interval_balances_with_meta
 
 

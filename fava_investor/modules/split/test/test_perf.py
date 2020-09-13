@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 
 from fava_investor import calculate_split_parts
-from fava_investor.modules.performance.test.testutils import SplitTestCase, get_ledger
+from fava_investor.modules.split.test.testutils import SplitTestCase, get_ledger
 
 
 class TestWithdrawals(SplitTestCase):

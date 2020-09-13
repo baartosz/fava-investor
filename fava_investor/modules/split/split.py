@@ -8,14 +8,14 @@ from beancount.core.inventory import Inventory
 from beancount.core.prices import build_price_map
 from fava.util.date import interval_ends
 
-from fava_investor.modules.performance.accumulators import UnrealizedGainAccumulator, CostAccumulator, \
-    ValueChangeAccumulator, \
+from fava_investor.modules.split.accumulators import UnrealizedGainAccumulator, CostAccumulator, \
+    BalanceAccumulator, \
     RealizedGainAccumulator, DividendsAccumulator, ContributionAccumulator, Accounts, WithdrawalAccumulator
 
 Split = namedtuple("Split", "transactions parts")
 SplitParts = namedtuple(
     "SplitParts",
-    "contributions withdrawals dividends costs gains_realized gains_unrealized value_changes errors",
+    "contributions withdrawals dividends costs gains_realized gains_unrealized balance errors",
 )
 Change = namedtuple("Change", "transaction change")
 
@@ -98,7 +98,7 @@ def get_accumulators(accounts: Accounts, entries, ids: List[str]):
         'gains_realized': lambda: RealizedGainAccumulator(accounts),
         'costs': lambda: CostAccumulator(accounts),
         'gains_unrealized': lambda: UnrealizedGainAccumulator(accounts, price_map),
-        'value_changes': lambda: ValueChangeAccumulator(accounts, price_map),
+        'balance': lambda: BalanceAccumulator(accounts, price_map),
     }
 
     return list([accs[key]() for key in ids])

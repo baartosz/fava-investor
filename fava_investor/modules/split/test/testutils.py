@@ -11,7 +11,7 @@ from beancount.utils import test_utils
 from fava.core import FavaLedger
 
 from fava_investor import sum_inventories, FavaInvestorAPI, calculate_split_parts, Accounts
-from fava_investor.modules.performance.split import build_price_map_with_fallback_to_cost
+from fava_investor.modules.split.split import build_price_map_with_fallback_to_cost
 
 
 def get_readable_split_parts(split_parts):

@@ -3,8 +3,8 @@ import datetime
 from beancount.core.prices import get_latest_price
 from beancount.utils import test_utils
 
-from fava_investor.modules.performance.split import build_price_map_with_fallback_to_cost
-from fava_investor.modules.performance.test.testutils import SplitTestCase, get_ledger, i, get_value
+from fava_investor.modules.split.split import build_price_map_with_fallback_to_cost
+from fava_investor.modules.split.test.testutils import SplitTestCase, get_ledger, i, get_value
 
 
 class TestPriceMap(SplitTestCase):

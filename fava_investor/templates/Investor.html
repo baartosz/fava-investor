@@ -209,7 +209,7 @@ Hold Ctrl or Cmd while clicking to expand one level.') %}
 
     <table>
     {% for key in summary %}
-        {% if key in ['sum_of_splits', 'value_changes', 'error'] %}
+        {% if key in ['sum_of_splits', 'balance', 'error'] %}
             <tr><td></td></tr>
         {% endif %}
         <tr>
@@ -217,7 +217,7 @@ Hold Ctrl or Cmd while clicking to expand one level.') %}
             <td style="text-align: right">
             {% for pos in summary[key]|cost_or_value(summary.date) %}{{ pos.units|format_amount }}<br>{% endfor %}
             <td>
-            {% if key not in ["sum_of_splits", "gains_unrealized", "error"] %}
+            {% if key not in ["sum_of_splits", "gains_unrealized", "error"] and '(' not in key %}
                 <a href="{{ url_for_current(module='split_journal_' + key, portfolio=selected_portfolio) }}">journal</a>
             {% endif %}
             </td>
@@ -254,7 +254,7 @@ Hold Ctrl or Cmd while clicking to expand one level.') %}
     'costs',
     'gains_realized',
     'gains_unrealized',
-    'value_changes',
+    'balance',
 ] %}
     {% if (module == 'split_journal_' + split_type) %}
         {% set selected_portfolio = request.args.get('portfolio') %}

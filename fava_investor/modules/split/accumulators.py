@@ -97,7 +97,7 @@ class CostAccumulator:
         return result
 
 
-class ValueChangeAccumulator:
+class BalanceAccumulator:
     last_entry_date = None
 
     def __init__(self, accounts: Accounts, price_map):
@@ -106,7 +106,7 @@ class ValueChangeAccumulator:
         self.accounts = accounts
 
     def get_id(self):
-        return 'value_changes'
+        return 'balance'
 
     def process(self, entry):
         for p in entry.postings:
@@ -156,7 +156,6 @@ class DividendsAccumulator:
     def process(self, entry):
         value = any([p.account in self.accounts.value for p in entry.postings])
         income = any([p.account in self.accounts.income for p in entry.postings])
-        external = any([p.account not in self.all_accounts for p in entry.postings])
 
         if value and income and not is_commodity_sale(entry, self.accounts.value):
             self.dividends += -include_postings(
