@@ -65,16 +65,23 @@ class Investor(FavaExtensionBase):  # pragma: no cover
         accapi = FavaInvestorAPI(self.ledger)
         return get_balances_tree(accapi, self.config.get('performance', {}))
 
-    def _get_split(self, accumulators, for_journal=False):
-        accounts = self._get_accounts_from_self()
+    def _get_split(self, portfolio, accumulators, for_journal=False):
+        accounts = self._get_accounts_from_self(portfolio)
         split = split_with_fava_config(self.ledger, accumulators, for_journal, accounts)
         return split
 
-    def _get_accounts_from_self(self):
-        return get_accounts(self.config.get("performance", {}), self.ledger.accounts)
+    def _get_accounts_from_self(self, portfolio):
+        config = self.config.get("split", {})
+        value_pattern = [p[1] for p in config["portfolios"] if p[0] == portfolio][0]
+        accounts = extract_accounts(self.ledger.accounts,
+                                    config.get("accounts_expenses_pattern", "^Expenses:"),
+                                    config.get("accounts_income_pattern", "^Income:"),
+                                    value_pattern
+                                    )
+        return accounts
 
-    def build_split_journal(self, kind):
-        split = self._get_split([kind], True)
+    def build_split_journal(self, kind, portfolio):
+        split = self._get_split(portfolio, [kind], True)
         split_values = getattr(split.parts, kind)
         to_keep = []
         for index in range(0, len(split.transactions)):
@@ -85,8 +92,12 @@ class Investor(FavaExtensionBase):  # pragma: no cover
         return [(split.transactions[i], None, split_values[i], balances[i]) for i in range(0, len(split.transactions))
                 if i in to_keep]
 
-    def split_summary(self):
-        split = self._get_split(
+    def get_portfolios(self):
+        ports = self.config.get("split")["portfolios"]
+        return [p[0] for p in ports]
+
+    def split_summary(self, portfolio):
+        split = self._get_split(portfolio,
             ['contributions', 'withdrawals', 'dividends', 'costs', 'gains_realized', 'gains_unrealized',
              'value_changes'])
         parts = split.parts
@@ -107,8 +118,8 @@ class Investor(FavaExtensionBase):  # pragma: no cover
         summary["error"] = sum_of_splits + -parts.value_changes[0]
         return summary
 
-    def accounts(self):
-        acc = self._get_accounts_from_self()
+    def accounts(self, portfolio):
+        acc = self._get_accounts_from_self(portfolio)
         output = {}
         output["value"] = acc.value
         output["expense"] = acc.expenses

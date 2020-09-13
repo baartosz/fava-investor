@@ -182,22 +182,6 @@ Hold Ctrl or Cmd while clicking to expand one level.') %}
 {% endif %}
 
 
-{% for split_type in [
-    'contributions',
-    'withdrawals',
-    'dividends',
-    'costs',
-    'gains_realized',
-    'gains_unrealized',
-    'value_changes',
-] %}
-    {% if (module == split_type) %}
-        <h2>Portfolio: Balance split - {{ module }} journal</h2>
-        {% import '_journal_table.html' as journal_table with context %}
-        {{ journal_table.journal_table(extension.build_split_journal(split_type), True) }}
-    {% endif %}
-{% endfor %}
-
 {% if (module == 'error') %}
     <h2>Portfolio: Balance split - error journal</h2>
     {% import '_journal_table.html' as journal_table with context %}
@@ -205,8 +189,23 @@ Hold Ctrl or Cmd while clicking to expand one level.') %}
 {% endif %}
 
 {% if (module == 'split') %}
+    {% set selected_portfolio = request.args.get('portfolio') %}
+    {% if not selected_portfolio %}
+        {% set selected_portfolio = extension.get_portfolios()[0] %}
+    {% endif %}
     <h2>Portfolio: Balance split</h2>
-    {% set summary = extension.split_summary() %}
+    <div class="headerline">
+        {% for portfolio in extension.get_portfolios() %}
+            <h3><b>
+                {% if selected_portfolio == portfolio %}
+                    {{ portfolio }}
+                {% else %}
+                    <a href="{{ url_for_current(module='split', portfolio=portfolio) }}">{{ portfolio }}</a>
+                {% endif %}
+            </b></h3>
+        {% endfor %}
+    </div>
+    {% set summary = extension.split_summary(selected_portfolio) %}
 
     <table>
     {% for key in summary %}
@@ -219,14 +218,15 @@ Hold Ctrl or Cmd while clicking to expand one level.') %}
             {% for pos in summary[key]|cost_or_value(summary.date) %}{{ pos.units|format_amount }}<br>{% endfor %}
             <td>
             {% if key not in ["sum_of_splits", "gains_unrealized", "error"] %}
-                <a href="{{ url_for_current(module=key) }}">journal</a>
+                <a href="{{ url_for_current(module='split_journal_' + key, portfolio=selected_portfolio) }}">journal</a>
             {% endif %}
             </td>
         </tr>
     {% endfor %}
     </table>
 
-    {% set output = extension.accounts() %}
+    <h3>Configured accounts</h3>
+    {% set output = extension.accounts(selected_portfolio) %}
     <table>
         <tr>
             {% for key in output %}
@@ -246,3 +246,24 @@ Hold Ctrl or Cmd while clicking to expand one level.') %}
         </tr>
     </table>
 {% endif %}
+
+{% for split_type in [
+    'contributions',
+    'withdrawals',
+    'dividends',
+    'costs',
+    'gains_realized',
+    'gains_unrealized',
+    'value_changes',
+] %}
+    {% if (module == 'split_journal_' + split_type) %}
+        {% set selected_portfolio = request.args.get('portfolio') %}
+        {% if not selected_portfolio %}
+            {% set selected_portfolio = extension.get_portfolios()[0] %}
+        {% endif %}
+
+        <h2>Portfolio: Balance split - {{ module }} journal</h2>
+        {% import '_journal_table.html' as journal_table with context %}
+        {{ journal_table.journal_table(extension.build_split_journal(split_type, selected_portfolio), True) }}
+    {% endif %}
+{% endfor %}
