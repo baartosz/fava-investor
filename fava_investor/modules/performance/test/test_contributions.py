@@ -1,5 +1,3 @@
-import datetime
-
 from beancount.core.data import Transaction
 from beancount.core.inventory import Inventory
 from beancount.utils import test_utils

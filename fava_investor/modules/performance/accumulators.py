@@ -158,9 +158,7 @@ class DividendsAccumulator:
         income = any([p.account in self.accounts.income for p in entry.postings])
         external = any([p.account not in self.all_accounts for p in entry.postings])
 
-        if (value and income and not is_commodity_sale(entry, self.accounts.value)) or (
-                not value and income and external
-        ):
+        if value and income and not is_commodity_sale(entry, self.accounts.value):
             self.dividends += -include_postings(
                 entry,
                 self.accounts.income,

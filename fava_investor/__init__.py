@@ -28,9 +28,9 @@ def extract_accounts(accounts, expenses_pattern, income_pattern, pattern_value):
 
 def split_with_fava_config(ledger, accumulators, config, for_journal, ledger_accounts):
     accounts = extract_accounts(ledger_accounts,
-                                config.get("accounts_pattern", "^Assets:Investments"),
+                                config.get("accounts_expenses_pattern", "^Expenses:"),
                                 config.get("accounts_income_pattern", "^Income:"),
-                                config.get("accounts_expenses_pattern", "^Expenses:")
+                                config.get("accounts_pattern", "^Assets:Investments")
                                 )
     split = calculate_split_parts(ledger.entries,
                                   accounts,

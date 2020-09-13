@@ -20,6 +20,8 @@ class TestDividends(SplitTestCase):
     @test_utils.docfile
     def test_dividend_paid_out_to_external_account(self, filename: str):
         """
+        ;yes, dividends can be paid out to external accounts eg directly to checking account. It's not going to work with accounts filtering though.
+
         2020-01-01 open Assets:Bank
         2020-01-01 open Income:Dividends
 
@@ -28,4 +30,4 @@ class TestDividends(SplitTestCase):
             Income:Dividends  -5 GBP
         """
         split = get_interval_balances(filename)
-        self.assertInventoriesSum("5 GBP", split.dividends)
+        self.assertInventoriesSum("0", split.dividends)
