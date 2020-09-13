@@ -191,11 +191,11 @@ Hold Ctrl or Cmd while clicking to expand one level.') %}
 {% if (module == 'split') %}
     {% set selected_portfolio = request.args.get('portfolio') %}
     {% if not selected_portfolio %}
-        {% set selected_portfolio = extension.get_portfolios()[0] %}
+        {% set selected_portfolio = extension.get_portfolios_names()[0] %}
     {% endif %}
     <h2>Portfolio: Balance split</h2>
     <div class="headerline">
-        {% for portfolio in extension.get_portfolios() %}
+        {% for portfolio in extension.get_portfolios_names() %}
             <h3><b>
                 {% if selected_portfolio == portfolio %}
                     {{ portfolio }}
@@ -259,7 +259,7 @@ Hold Ctrl or Cmd while clicking to expand one level.') %}
     {% if (module == 'split_journal_' + split_type) %}
         {% set selected_portfolio = request.args.get('portfolio') %}
         {% if not selected_portfolio %}
-            {% set selected_portfolio = extension.get_portfolios()[0] %}
+            {% set selected_portfolio = extension.get_portfolios_names()[0] %}
         {% endif %}
 
         <h2>Portfolio: Balance split - {{ module }} journal</h2>

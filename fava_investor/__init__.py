@@ -72,11 +72,11 @@ class Investor(FavaExtensionBase):  # pragma: no cover
 
     def _get_accounts_from_self(self, portfolio):
         config = self.config.get("split", {})
-        value_pattern = [p[1] for p in config["portfolios"] if p[0] == portfolio][0]
+        p_cfg = [p for p in config["portfolios"] if p['name'] == portfolio][0]
         accounts = extract_accounts(self.ledger.accounts,
-                                    config.get("accounts_expenses_pattern", "^Expenses:"),
-                                    config.get("accounts_income_pattern", "^Income:"),
-                                    value_pattern
+                                    p_cfg['expense'] if 'expense' in p_cfg else config.get("accounts_expenses_pattern", "^Expenses:"),
+                                    p_cfg['income'] if 'income' in p_cfg else config.get("accounts_income_pattern", "^Income:"),
+                                    p_cfg['asset']
                                     )
         return accounts
 
@@ -92,9 +92,9 @@ class Investor(FavaExtensionBase):  # pragma: no cover
         return [(split.transactions[i], None, split_values[i], balances[i]) for i in range(0, len(split.transactions))
                 if i in to_keep]
 
-    def get_portfolios(self):
+    def get_portfolios_names(self):
         ports = self.config.get("split")["portfolios"]
-        return [p[0] for p in ports]
+        return [p['name'] for p in ports]
 
     def split_summary(self, portfolio):
         split = self._get_split(portfolio,
