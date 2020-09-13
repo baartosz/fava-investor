@@ -26,20 +26,24 @@ def extract_accounts(accounts, expenses_pattern, income_pattern, pattern_value):
     return accounts
 
 
-def split_with_fava_config(ledger, accumulators, config, for_journal, ledger_accounts):
-    accounts = extract_accounts(ledger_accounts,
-                                config.get("accounts_expenses_pattern", "^Expenses:"),
-                                config.get("accounts_income_pattern", "^Income:"),
-                                config.get("accounts_pattern", "^Assets:Investments")
-                                )
+def split_with_fava_config(ledger, accumulators, for_journal, ledger_accounts):
     split = calculate_split_parts(ledger.entries,
-                                  accounts,
+                                  ledger_accounts,
                                   accumulators,
                                   interval='transaction' if for_journal else None,
                                   begin=ledger.filters.time.begin_date,
                                   end=ledger.filters.time.end_date,
                                   )
     return split
+
+
+def get_accounts(config, ledger_accounts):
+    accounts = extract_accounts(ledger_accounts,
+                                config.get("accounts_expenses_pattern", "^Expenses:"),
+                                config.get("accounts_income_pattern", "^Income:"),
+                                config.get("accounts_pattern", "^Assets:Investments")
+                                )
+    return accounts
 
 
 class Investor(FavaExtensionBase):  # pragma: no cover
@@ -62,10 +66,12 @@ class Investor(FavaExtensionBase):  # pragma: no cover
         return get_balances_tree(accapi, self.config.get('performance', {}))
 
     def _get_split(self, accumulators, for_journal=False):
-        config = self.config.get("performance", {})
-        ledger_accounts = self.ledger.accounts
-        split = split_with_fava_config(self.ledger, accumulators, config, for_journal, ledger_accounts)
+        accounts = self._get_accounts_from_self()
+        split = split_with_fava_config(self.ledger, accumulators, for_journal, accounts)
         return split
+
+    def _get_accounts_from_self(self):
+        return get_accounts(self.config.get("performance", {}), self.ledger.accounts)
 
     def build_split_journal(self, kind):
         split = self._get_split([kind], True)
@@ -79,7 +85,7 @@ class Investor(FavaExtensionBase):  # pragma: no cover
         return [(split.transactions[i], None, split_values[i], balances[i]) for i in range(0, len(split.transactions))
                 if i in to_keep]
 
-    def split_summary(self, begin=None, end=None):
+    def split_summary(self):
         split = self._get_split(
             ['contributions', 'withdrawals', 'dividends', 'costs', 'gains_realized', 'gains_unrealized',
              'value_changes'])
@@ -100,3 +106,11 @@ class Investor(FavaExtensionBase):  # pragma: no cover
         summary["sum_of_splits"] = sum_of_splits
         summary["error"] = sum_of_splits + -parts.value_changes[0]
         return summary
+
+    def accounts(self):
+        acc = self._get_accounts_from_self()
+        output = {}
+        output["value"] = acc.value
+        output["expense"] = acc.expenses
+        output["income"] = acc.income
+        return output

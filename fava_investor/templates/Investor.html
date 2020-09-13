@@ -225,4 +225,24 @@ Hold Ctrl or Cmd while clicking to expand one level.') %}
         </tr>
     {% endfor %}
     </table>
+
+    {% set output = extension.accounts() %}
+    <table>
+        <tr>
+            {% for key in output %}
+                <th>{{ key }}</th>
+            {% endfor %}
+        </tr>
+        <tr>
+            {% for key in output %}
+                <td style="text-align: left">
+                <ul>
+                    {% for item in output[key]|sort %}
+                    <li>{{ item  }}</li>
+                        {% endfor %}
+                </ul>
+                </td>
+            {% endfor %}
+        </tr>
+    </table>
 {% endif %}
