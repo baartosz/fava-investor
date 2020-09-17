@@ -1,252 +1,17 @@
 {% import "_query_table.html" as querytable with context %}
 {% import "_charts.html" as charts with context %}
 
-<i>Investor: Reports, analyses, and tools for investments.</i>
-
 {% set module = request.args.get('module') %}
-<div class="headerline">
-    {% for key, label in [
-    ('aa_class', _('Asset Allocation Classes')),
-    ('aa_account', _('Asset Allocation Accounts')),
-    ('cashdrag', _('Cash Drag')),
-    ('tlh', _('Tax Loss Harvestor')),
-    ('balances', _('Balances')),
-    ('split', _('Split'))
-    ] %}
-  <h3><b>{% if not (module == key) %}<a href="{{ url_for_current(module=key) }}">{{ label }}</a>{% else %} {{ label }}{% endif %}</b></h3>
-  {% endfor %}
-</div>
-
-
-{% if (module == 'aa_account') %}
-  <h2>Portfolio: Asset Allocation by Accounts</h2>
-  {% set results = extension.build_aa_by_account(None, None) %}
-  {% if results|length == 0 %}
-     No regexes found in configuration. See example.beancount for how to configure this module.
-  {% else %}
-    {% for portfolio in results %}
-        <h3>{{portfolio[0]}}</h3>
-        {{ querytable.querytable(None, *portfolio[1]) }}
-        <br />
-    {% endfor %}
-  {% endif %}
-{% endif %}
-
-
-{% if (module == 'cashdrag') %}
-  <h2>Cash Drag Analysis</h2>
-  {% set results = extension.build_cashdrag(None, None) %}
-  {{ querytable.querytable(None, results[0], results[1]) }}
-{% endif %}
-
-{% if (module == 'tlh') %}
-  <h2>Tax Loss Harvester</h2>
-  {% set harvests = extension.build_tlh_tables(None, None) %}
-
-  <div class="row">
-    <div class="column">
-      <h3 style="text-align:left">Summary</h3>
-      <table class="sortable">
-        <thead>
-          <tr>
-            <th data-sort="string">{{ _('Summary') }}</th>
-            <th data-sort="string">{{ _('Val') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for key, value in harvests[1].items() %}
-          <tr>
-            <td>{{ key }}</td>
-            <td align="right">{{ value }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      <br />
-    </div>
-    <div class="column">
-      <h3 style="text-align:left">Losses by Commodity</h3>
-      {{ querytable.querytable(None, *harvests[3]) }}
-      <br />
-    </div>
-  </div>
-
-
-  <h3>Candidates for tax loss harvesting</h3>
-  {{ querytable.querytable(None, *harvests[0]) }}
-  <br />
-
-
-  <h3>Potential Wash Sales: purchases within the past 30 days</h3>
-  {% set table_empty_msg = None %}
-  {% if harvests[2][0]|length == 0 %}
-    {% set table_empty_msg = 'No purchases of the candidates above found within the last 30 days!' %}
-  {% endif %}
-  {{ querytable.querytable(table_empty_msg, *harvests[2]) }}
-  <br />
-
-  <h3>What not to buy</h3>
-  Note: the below is a list of recent sales with losses provided for your convenience
-  in making purchasing decisions around wash sales. (This is not meant to be financial
-  or tax advice).
-  {% set lossy_sales = extension.recently_sold_at_loss(None, None) %}
-  {% set table_empty_msg = None %}
-  {% if lossy_sales[1]|length == 0 %}
-    {% set table_empty_msg = 'No sales with losses found in the last 30 days!' %}
-  {% endif %}
-  {{ querytable.querytable(table_empty_msg, lossy_sales[0], lossy_sales[1]) }}
-
-
-{% endif %}
-
-{% set table_hover_text = _('Hold Shift while clicking to expand all children.
-Hold Ctrl or Cmd while clicking to expand one level.') %}
-
-{# TODO:
-- add a format_percentage() to fava's template_filters, and use that here
-- display 0 decimal places for assets (needed for all of fava_investor)
-- fix: asset bucket spacing is too wide
-- get currency from libassetalloc instead of looping: {% for currency in ledger.options.operating_currency %}
-- remove links from asset class name
-#}
-
-{% macro asset_tree(account_node) %}
-<ol class="flex-table tree-table{{ ' two-currencies' if ledger.options.operating_currency|length > 1 else '' }}" title="{{ table_hover_text }}">
-  <li class="head">
-    <p>
-      <span class="account-cell"><button type="button" class="link expand-all hidden" title="{{ _('Expand all accounts') }}">{{ _('Expand all') }}</button></span>
-      {% for currency in ledger.options.operating_currency %}
-      <span class="num">{{ currency }}</span>
-      {% endfor %}
-      <span class="num other">{{ _('Percentage') }}</span>
-    </p>
-  </li>
-  {% for account in ([account_node] if account_node.name else account_node.children) recursive %}
-  <li{{ '' }}>
-    <p{{ ' class=has-balance' }}>
-    <span class="account-cell depth-{{ loop.depth0 }} droptarget{{ ' has-children' if account.children else '' }}" data-account-name="{{ account.name }}">
-    <a href='' class='account'>
-      {{ account.name.split('_')[-1] }}
-    </a>
-    </span>
-    {% for currency in ledger.options.operating_currency %}
-    <span class="num">
-      <span class="balance">
-        <span class="number">{{ account.balance|format_currency(currency) }}</span>
-      </span>
-      <span class="balance-children">
-        <span class="number">{{ account.balance_children|format_currency(currency) }}</span>
-      </span>
-    </span>
-    {% endfor %}
-    <span class="num other">
-      {% set percentage_parent =  '{:3.0f}% of {}'.format(account.percentage_parent, account.parent.name) if account.parent else '' %}
-      <span class="balance">
-        <span class="number" title="{{ percentage_parent }}">{{ '{:6.2f} %'.format(account.percentage) if account.percentage else '' }}</span>
-      </span>
-      <span class="balance-children">
-        <span class="number" title="{{ percentage_parent }}">{{ '{:6.2f} %'.format(account.percentage_children) if account.percentage_children else '' }}</span>
-      </span>
-    </span>
-    </p>
-    {% if account.children %}
-    <ol>
-      {{ loop(account.children|sort(attribute='name')) }}
-    </ol>
-    {% endif %}
-  </li>
-  {% endfor %}
-</ol>
-{% endmacro %}
-
-{% macro asset_allocation_hierarchy(serialised_tree, label=None) %}
-{% do charts.chart_data.append({
-'type': 'hierarchy',
-'label': 'Asset Allocation' if not label else label,
-'data': {
-  'modifier': 1,
-  'root': serialised_tree,
-},
-}) %}
-{% endmacro %}
-
-{% if (module == 'aa_class') %}
-  <h2>Portfolio: Asset Allocation by Class</h2>
-
-  {% set results = extension.build_assetalloc_by_class(None, None) %}
-  {{ asset_tree(results[0]) }}
-
-  {{ asset_allocation_hierarchy(results[0].serialise(results[0]['currency']), label='Asset Allocation') }}
-  <script type="application/json" id="chart-data">{{ charts.chart_data|tojson|safe }}</script>
-
-{% endif %}
-
-
 {% if (module == 'error') %}
     <h2>Portfolio: Balance split - error journal</h2>
     {% import '_journal_table.html' as journal_table with context %}
     {{ journal_table.journal_table(extension.build_errors_journal(), True) }}
 {% endif %}
 
-{% if (module == 'split') %}
-    {% set selected_portfolio = request.args.get('portfolio') %}
-    {% if not selected_portfolio %}
-        {% set selected_portfolio = extension.get_portfolios_names()[0] %}
-    {% endif %}
-    <h2>Portfolio: Balance split</h2>
-    <div class="headerline">
-        {% for portfolio in extension.get_portfolios_names() %}
-            <h3><b>
-                {% if selected_portfolio == portfolio %}
-                    {{ portfolio }}
-                {% else %}
-                    <a href="{{ url_for_current(module='split', portfolio=portfolio) }}">{{ portfolio }}</a>
-                {% endif %}
-            </b></h3>
-        {% endfor %}
-    </div>
-    {% set summary = extension.split_summary(selected_portfolio) %}
-
-    <table>
-    {% for key in summary %}
-        {% if key in ['sum_of_splits', 'balance', 'error'] %}
-            <tr><td></td></tr>
-        {% endif %}
-        <tr>
-            <th>{{ key }}</th>
-            <td style="text-align: right">
-            {% for pos in summary[key] %}{{ pos.units|format_amount }}<br>{% endfor %}
-            <td>
-            {% if key not in ["sum_of_splits", "gains_unrealized", "error"] and '(' not in key %}
-                <a href="{{ url_for_current(module='split_journal_' + key, portfolio=selected_portfolio) }}">journal</a>
-            {% endif %}
-            </td>
-        </tr>
-    {% endfor %}
-    </table>
-
-    <h3>Configured accounts</h3>
-    {% set output = extension.accounts(selected_portfolio) %}
-    <table>
-        <tr>
-            {% for key in output %}
-                <th>{{ key }}</th>
-            {% endfor %}
-        </tr>
-        <tr>
-            {% for key in output %}
-                <td style="text-align: left">
-                <ul>
-                    {% for item in output[key]|sort %}
-                    <li>{{ item  }}</li>
-                        {% endfor %}
-                </ul>
-                </td>
-            {% endfor %}
-        </tr>
-    </table>
+{% set selected_portfolio = request.args.get('portfolio') %}
+{% if not selected_portfolio %}
+    {% set selected_portfolio = extension.get_portfolios_names()[0] %}
 {% endif %}
-
 {% for split_type in [
     'contributions',
     'withdrawals',
@@ -267,3 +32,60 @@ Hold Ctrl or Cmd while clicking to expand one level.') %}
         {{ journal_table.journal_table(extension.build_split_journal(split_type, selected_portfolio), True) }}
     {% endif %}
 {% endfor %}
+
+{% if not module %}
+    <h2>Portfolio: Balance split</h2>
+    <div class="headerline">
+        {% for portfolio in extension.get_portfolios_names() %}
+            <h3><b>
+                {% if selected_portfolio == portfolio %}
+                    {{ portfolio }}
+                {% else %}
+                    <a href="{{ url_for_current(portfolio=portfolio) }}">{{ portfolio }}</a>
+                {% endif %}
+            </b></h3>
+        {% endfor %}
+    </div>
+    {% set summary = extension.split_summary(selected_portfolio) %}
+
+    <table>
+        {% for key in summary %}
+            {% if key in ['sum_of_splits', 'balance', 'error'] %}
+                <tr>
+                    <td></td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>{{ key }}</th>
+                <td style="text-align: right">
+                    {% for pos in summary[key] %}{{ pos.units|format_amount }}<br>{% endfor %}
+                <td>
+                    {% if key not in ["sum_of_splits", "gains_unrealized", "error"] and '(' not in key %}
+                        <a href="{{ url_for_current(module='split_journal_' + key, portfolio=selected_portfolio) }}">journal</a>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    <h3>Configured accounts</h3>
+    {% set output = extension.accounts(selected_portfolio) %}
+    <table>
+        <tr>
+            {% for key in output %}
+                <th>{{ key }}</th>
+            {% endfor %}
+        </tr>
+        <tr>
+            {% for key in output %}
+                <td style="text-align: left">
+                    <ul>
+                        {% for item in output[key]|sort %}
+                            <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+            {% endfor %}
+        </tr>
+    </table>
+{% endif %}

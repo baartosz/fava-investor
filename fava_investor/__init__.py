@@ -1,7 +1,5 @@
 """Fava Investor: Investing related reports and tools for Beancount/Fava"""
-import copy
 import re
-from datetime import datetime
 
 from beancount.core.inventory import Inventory
 from fava.ext import FavaExtensionBase
@@ -11,9 +9,6 @@ from .modules.split.accumulators import Accounts
 from .modules.split.balances import get_balances_tree
 from .modules.split.split import calculate_split_parts, sum_inventories, calculate_balances
 from .modules.tlh import libtlh
-from .modules.assetalloc_class import libassetalloc
-from .modules.assetalloc_account import libaaacc
-from .modules.cashdrag import libcashdrag
 from .common.favainvestorapi import FavaInvestorAPI
 
 
@@ -50,18 +45,6 @@ def get_accounts(config, ledger_accounts):
 class Investor(FavaExtensionBase):  # pragma: no cover
     report_title = "Split"
 
-    # TaxLossHarvester
-    # -----------------------------------------------------------------------------------------------------------
-    def build_tlh_tables(self, begin=None, end=None):
-        accapi = FavaInvestorAPI(self.ledger)
-        return libtlh.get_tables(accapi, self.config.get('tlh', {}))
-
-    def recently_sold_at_loss(self, begin=None, end=None):
-        accapi = FavaInvestorAPI(self.ledger)
-        return libtlh.recently_sold_at_loss(accapi, self.config.get('tlh', {}))
-
-    # Performance
-    # -----------------------------------------------------------------------------------------------------------
     def build_balances_tree(self):
         accapi = FavaInvestorAPI(self.ledger)
         return get_balances_tree(accapi, self.config.get('performance', {}))
@@ -97,24 +80,18 @@ class Investor(FavaExtensionBase):  # pragma: no cover
         ports = self.config.get("split")["portfolios"]
         return [p['name'] for p in ports]
 
-    def get_date(self):
-        entries_ = self.ledger.entries[-1]
-        return entries_.date
-
     def split_summary(self, portfolio):
-        split = self._get_split(portfolio,
-            ['contributions', 'withdrawals', 'dividends', 'costs', 'gains_realized', 'gains_unrealized',
-             'balance'])
+        split = self._get_split(portfolio, ['contributions', 'withdrawals', 'dividends', 'costs', 'gains_realized', 'gains_unrealized', 'balance'])
         parts = split.parts
         summary = {'contributions': sum_inventories(parts.contributions),
                    'withdrawals': sum_inventories(parts.withdrawals),
                    '(net_contrib.)': sum_inventories(parts.contributions + parts.withdrawals),
                    'dividends': sum_inventories(parts.dividends),
                    'costs': sum_inventories(parts.costs),
-                   '(net_div.)': sum_inventories(parts.dividends+ parts.costs),
+                   '(net_div.)': sum_inventories(parts.dividends + parts.costs),
                    'gains_realized': sum_inventories(parts.gains_realized),
                    'gains_unrealized': sum_inventories(parts.gains_unrealized),
-                   '(net_gains)': sum_inventories(parts.gains_realized+ parts.gains_unrealized),
+                   '(net_gains)': sum_inventories(parts.gains_realized + parts.gains_unrealized),
                    }
 
         sum_of_splits = Inventory()
