@@ -2,7 +2,6 @@ import copy
 from collections import namedtuple
 from typing import List
 
-from beancount.core.amount import Amount
 from beancount.core.data import Transaction, Price
 from beancount.core.inventory import Inventory
 from beancount.core.prices import build_price_map
@@ -90,8 +89,8 @@ def add_dummy_transaction_if_has_entries_after_last_transaction(entries):
 
 
 def get_accumulators(accounts: Accounts, entries, ids: List[str]):
-    price_map = build_price_map_with_fallback_to_cost(entries)
-    accs = {
+    price_map = build_price_map(entries)
+    accumulators = {
         'contributions': lambda: ContributionAccumulator(accounts),
         'withdrawals': lambda: WithdrawalAccumulator(accounts),
         'dividends': lambda: DividendsAccumulator(accounts),
@@ -101,14 +100,14 @@ def get_accumulators(accounts: Accounts, entries, ids: List[str]):
         'balance': lambda: BalanceAccumulator(accounts, price_map),
     }
 
-    return list([accs[key]() for key in ids])
+    return list([accumulators[key]() for key in ids])
 
 
 def sum_inventories(inv_list):
-    sum = Inventory()
+    total = Inventory()
     for inv in inv_list:
-        sum += inv
-    return sum
+        total += inv
+    return total
 
 
 def calculate_balances(inventories):
@@ -122,57 +121,14 @@ def calculate_balances(inventories):
     return result
 
 
-def build_price_map_with_fallback_to_cost(entries):
-    """
-    Default price map does not contain purchase price from buying transaction. Beancount fails to calculate value
-     unless there is price entry with same or earlier date. This function adds price entries from transaction
-     if there isn't one for purchased commodity on purchase date or earlier.
-    """
-    buying_prices = {}
-    first_price_date = {}
-    prices = set()
-
-    for entry in entries:
-        if isinstance(entry, Price):
-            first_price_date[(entry.currency, entry.amount.currency)] = entry.date
-            prices.add((entry.currency, entry.amount.currency))
-
-        if not isinstance(entry, Transaction):
-            continue
-
-        for p in entry.postings:
-            if (
-                    p.cost is not None
-                    and p.units is not None
-                    and (p.units.currency, p.cost.currency) not in prices
-            ):
-                key = (p.units.currency, p.cost.currency)
-                if key in buying_prices:
-                    continue
-                buying_prices[key] = Price(
-                    {},
-                    entry.date,
-                    p.units.currency,
-                    Amount(p.units.number / p.cost.number, p.cost.currency),
-                )
-
-    prices_to_add = []
-    for key, price in buying_prices.items():
-        if key not in first_price_date or first_price_date[key] > price.date:
-            first_price_date[key] = price.date
-            prices_to_add.append(price)
-
-    return build_price_map(entries + prices_to_add)
-
-
 def has_prices_after_last_transaction(entries):
-    has_prices_after_last_transaction = False
+    has_prices_after_last_tx = False
     for entry in reversed(entries):
         if isinstance(entry, Price):
-            has_prices_after_last_transaction = True
+            has_prices_after_last_tx = True
 
         if isinstance(entry, Transaction):
-            return has_prices_after_last_transaction
+            return has_prices_after_last_tx
 
 
 def collect_results(accumulators, split_entries):

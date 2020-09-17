@@ -1,6 +1,7 @@
 """Fava Investor: Investing related reports and tools for Beancount/Fava"""
 import copy
 import re
+from datetime import datetime
 
 from beancount.core.inventory import Inventory
 from fava.ext import FavaExtensionBase
@@ -39,8 +40,8 @@ def split_with_fava_config(ledger, accumulators, for_journal, ledger_accounts):
 
 def get_accounts(config, ledger_accounts):
     accounts = extract_accounts(ledger_accounts,
-                                config.get("accounts_expenses_pattern", "^Expenses:"),
-                                config.get("accounts_income_pattern", "^Income:"),
+                                config.get("expenses", "^Expenses:"),
+                                config.get("income", "^Income:"),
                                 config.get("accounts_pattern", "^Assets:Investments")
                                 )
     return accounts
@@ -74,8 +75,8 @@ class Investor(FavaExtensionBase):  # pragma: no cover
         config = self.config.get("split", {})
         p_cfg = [p for p in config["portfolios"] if p['name'] == portfolio][0]
         accounts = extract_accounts(self.ledger.accounts,
-                                    p_cfg['expense'] if 'expense' in p_cfg else config.get("accounts_expenses_pattern", "^Expenses:"),
-                                    p_cfg['income'] if 'income' in p_cfg else config.get("accounts_income_pattern", "^Income:"),
+                                    config.get("expenses", "^Expenses:"),
+                                    config.get("income", "^Income:"),
                                     p_cfg['asset']
                                     )
         return accounts
@@ -95,6 +96,10 @@ class Investor(FavaExtensionBase):  # pragma: no cover
     def get_portfolios_names(self):
         ports = self.config.get("split")["portfolios"]
         return [p['name'] for p in ports]
+
+    def get_date(self):
+        entries_ = self.ledger.entries[-1]
+        return entries_.date
 
     def split_summary(self, portfolio):
         split = self._get_split(portfolio,

@@ -215,7 +215,7 @@ Hold Ctrl or Cmd while clicking to expand one level.') %}
         <tr>
             <th>{{ key }}</th>
             <td style="text-align: right">
-            {% for pos in summary[key]|cost_or_value(summary.date) %}{{ pos.units|format_amount }}<br>{% endfor %}
+            {% for pos in summary[key] %}{{ pos.units|format_amount }}<br>{% endfor %}
             <td>
             {% if key not in ["sum_of_splits", "gains_unrealized", "error"] and '(' not in key %}
                 <a href="{{ url_for_current(module='split_journal_' + key, portfolio=selected_portfolio) }}">journal</a>
